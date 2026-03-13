@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional, Tuple
+from typing import Any, Iterable, List, Optional, Tuple
 
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,14 +7,14 @@ from app.models.vacancy import Vacancy
 from app.schemas.vacancy import VacancyCreate, VacancyRead, VacancyUpdate
 
 
-async def get_vacancy(session: AsyncSession, vacancy_id: int) -> Optional[VacancyRead]:
+async def get_vacancy(session: AsyncSession, vacancy_id: int) -> Optional[Vacancy]:
     result = await session.execute(select(Vacancy).where(Vacancy.id == vacancy_id))
     vacancy = result.scalar_one_or_none()
 
     if not vacancy:
         return None
 
-    return VacancyRead.model_validate(vacancy)
+    return vacancy
 
 
 async def get_vacancy_by_external_id(
@@ -45,6 +45,8 @@ async def create_vacancy(session: AsyncSession, data: VacancyCreate) -> VacancyR
     vacancy = Vacancy(**data.model_dump())
     session.add(vacancy)
     await session.commit()
+    # NOTE: Is it considered an error if your commit might datarace if there are complex operations added,
+    # but since you only do atomic things, it doesn't?
     await session.refresh(vacancy)
     return VacancyRead.model_validate(vacancy)
 
@@ -65,7 +67,7 @@ async def delete_vacancy(session: AsyncSession, vacancy: Vacancy) -> None:
 
 
 async def upsert_external_vacancies(
-    session: AsyncSession, payloads: Iterable[dict]
+    session: AsyncSession, payloads: Iterable[dict[Any, Any]]
 ) -> int:
     external_ids = [payload["external_id"] for payload in payloads if payload["external_id"]]
     if external_ids:
