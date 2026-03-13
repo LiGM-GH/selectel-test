@@ -34,18 +34,20 @@ async def parse_and_store(session: AsyncSession) -> int:
             payload = await fetch_page(client, page)
             parsed_payloads = []
             for item in payload.items:
-                parsed_payloads.append(
-                    {
+                city_value = {
                         "external_id": item.id,
                         "title": item.title,
                         "timetable_mode_name": item.timetable_mode.name,
                         "tag_name": item.tag.name,
-                        "city_name": item.city.name.strip(),
                         "published_at": item.published_at,
                         "is_remote_available": item.is_remote_available,
                         "is_hot": item.is_hot,
                     }
-                )
+
+                if item.city:
+                    city_value["city_name"] = item.city.name
+
+                parsed_payloads.append(city_value)
 
             created_count = await upsert_external_vacancies(session, parsed_payloads)
             created_total += created_count
