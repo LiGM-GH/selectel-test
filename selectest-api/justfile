@@ -2,7 +2,7 @@ default:
     just --list
 
 start:
-    docker compose up --build
+    podman-compose up --build
 
 stop:
-    docker-compose down -v
+    podman-compose down -v
