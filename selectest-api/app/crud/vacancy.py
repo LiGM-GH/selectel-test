@@ -1,10 +1,10 @@
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Tuple
 
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.vacancy import Vacancy
-from app.schemas.vacancy import VacancyCreate, VacancyUpdate
+from app.schemas.vacancy import VacancyCreate, VacancyRead, VacancyUpdate
 
 
 async def get_vacancy(session: AsyncSession, vacancy_id: int) -> Optional[Vacancy]:
@@ -25,15 +25,15 @@ async def list_vacancies(
     session: AsyncSession,
     timetable_mode_name: Optional[str],
     city_name: Optional[str],
-) -> List[Vacancy]:
-    stmt: Select = select(Vacancy)
+) -> List[VacancyRead]:
+    stmt: Select[Tuple[Vacancy]] = select(Vacancy)
     if timetable_mode_name:
         stmt = stmt.where(Vacancy.timetable_mode_name.ilike(f"%{timetable_mode_name}%"))
     if city_name:
         stmt = stmt.where(Vacancy.city_name.ilike(f"%{city_name}%"))
     stmt = stmt.order_by(Vacancy.published_at.desc())
     result = await session.execute(stmt)
-    return list(result.scalars().all())
+    return [VacancyRead.model_validate(vacancy) for vacancy in result.scalars()]
 
 
 async def create_vacancy(session: AsyncSession, data: VacancyCreate) -> Vacancy:
