@@ -7,9 +7,14 @@ from app.models.vacancy import Vacancy
 from app.schemas.vacancy import VacancyCreate, VacancyRead, VacancyUpdate
 
 
-async def get_vacancy(session: AsyncSession, vacancy_id: int) -> Optional[Vacancy]:
+async def get_vacancy(session: AsyncSession, vacancy_id: int) -> Optional[VacancyRead]:
     result = await session.execute(select(Vacancy).where(Vacancy.id == vacancy_id))
-    return result.scalar_one_or_none()
+    vacancy = result.scalar_one_or_none()
+
+    if not vacancy:
+        return None
+
+    return VacancyRead.model_validate(vacancy)
 
 
 async def get_vacancy_by_external_id(
@@ -36,22 +41,22 @@ async def list_vacancies(
     return [VacancyRead.model_validate(vacancy) for vacancy in result.scalars()]
 
 
-async def create_vacancy(session: AsyncSession, data: VacancyCreate) -> Vacancy:
+async def create_vacancy(session: AsyncSession, data: VacancyCreate) -> VacancyRead:
     vacancy = Vacancy(**data.model_dump())
     session.add(vacancy)
     await session.commit()
     await session.refresh(vacancy)
-    return vacancy
+    return VacancyRead.model_validate(vacancy)
 
 
 async def update_vacancy(
     session: AsyncSession, vacancy: Vacancy, data: VacancyUpdate
-) -> Vacancy:
+) -> VacancyRead:
     for field, value in data.model_dump().items():
         setattr(vacancy, field, value)
     await session.commit()
     await session.refresh(vacancy)
-    return vacancy
+    return VacancyRead.model_validate(vacancy)
 
 
 async def delete_vacancy(session: AsyncSession, vacancy: Vacancy) -> None:
