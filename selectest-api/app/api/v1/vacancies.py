@@ -1,3 +1,4 @@
+from inspect import currentframe, getframeinfo
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -45,13 +46,26 @@ async def get_vacancy_endpoint(
 @router.post("/", response_model=VacancyRead, status_code=status.HTTP_201_CREATED)
 async def create_vacancy_endpoint(
     payload: VacancyCreate, session: AsyncSession = Depends(get_session)
-) -> VacancyRead:
+) -> VacancyRead | JSONResponse:
     if payload.external_id is not None:
         existing = await get_vacancy_by_external_id(session, payload.external_id)
         if existing:
             return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={"detail": "Vacancy with external_id already exists"},
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                content={
+                    "detail": {
+                        "loc": [
+                            __file__,
+                            (
+                                getframeinfo(frame).lineno
+                                if (frame := currentframe())
+                                else ""
+                            ),
+                        ],
+                        "msg": "Vacancy with external_id already exists",
+                        "type": "Already Exists",
+                    }
+                },
             )
     return await create_vacancy(session, payload)
 
