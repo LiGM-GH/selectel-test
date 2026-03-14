@@ -45,8 +45,6 @@ async def create_vacancy(session: AsyncSession, data: VacancyCreate) -> VacancyR
     vacancy = Vacancy(**data.model_dump())
     session.add(vacancy)
     await session.commit()
-    # NOTE: Is it considered an error if your commit might datarace if there are complex operations added,
-    # but since you only do atomic things, it doesn't?
     await session.refresh(vacancy)
     return VacancyRead.model_validate(vacancy)
 

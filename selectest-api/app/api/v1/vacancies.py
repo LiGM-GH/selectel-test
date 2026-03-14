@@ -75,11 +75,31 @@ async def update_vacancy_endpoint(
     vacancy_id: int,
     payload: VacancyUpdate,
     session: AsyncSession = Depends(get_session),
-) -> VacancyRead:
+) -> VacancyRead | JSONResponse:
     vacancy = await get_vacancy(session, vacancy_id)
     if not vacancy:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    return await update_vacancy(session, vacancy, payload)
+    try:
+        vacancy_result = await update_vacancy(session, vacancy, payload)
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={
+                "detail": {
+                    "loc": [
+                        __file__,
+                        (
+                            getframeinfo(frame).lineno
+                            if (frame := currentframe())
+                            else ""
+                        ),
+                    ],
+                    "msg": "Vacancy with external_id already exists",
+                    "type": "Already Exists",
+                }
+            },
+        )
+    return vacancy_result
 
 
 @router.delete("/{vacancy_id}", status_code=status.HTTP_204_NO_CONTENT)
