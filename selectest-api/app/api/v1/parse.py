@@ -9,10 +9,10 @@ router = APIRouter(prefix="/parse", tags=["parser"])
 
 async def get_session() -> AsyncSession:
     async with async_session_maker() as session:
-        return session
+        yield session
 
 
 @router.post("/")
-async def parse_endpoint(session: AsyncSession = Depends(get_session)) -> dict[str, int]:
+async def parse_endpoint(session: AsyncSession = Depends(get_session)) -> dict:
     created_count = await parse_and_store(session)
     return {"created": created_count}

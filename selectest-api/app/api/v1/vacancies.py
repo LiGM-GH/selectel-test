@@ -21,7 +21,7 @@ router = APIRouter(prefix="/vacancies", tags=["vacancies"])
 
 async def get_session() -> AsyncSession:
     async with async_session_maker() as session:
-        return session
+        yield session
 
 
 @router.get("/", response_model=List[VacancyRead])
